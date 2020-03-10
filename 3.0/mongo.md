@@ -34,7 +34,11 @@ exports.model = {
     user: '',
     password: '',
     database: '', // 数据库名称
-    options: ''
+    options: {
+      // 身份验证相关
+      // replicaSet: 'mgset-3074013',
+      // authSource: 'admin'
+    }
   }
 }
 ```
@@ -54,7 +58,11 @@ exports.model = {
     user: '',
     password: '',
     database: '', // 数据库名称
-    options: ''
+    options: {
+      // 身份验证相关
+      // replicaSet: 'mgset-3074013',
+      // authSource: 'admin'
+    }
   }
 }
 ```
@@ -93,7 +101,7 @@ think.mongo('user', 'sqlite'); // 获取模型的实例，修改数据库的类�
 think.mongo('user', { // 获取模型的实例，修改类型并添加其他的参数
   type: 'sqlite',
   aaa: 'bbb'
-}); 
+});
 think.mongo('user', {}, 'admin'); // 获取模型的实例，指定为 admin 模块（多模块项目下有效）
 ```
 #### ctx.mongo
@@ -201,7 +209,7 @@ module.exports = class extends think.Mongo {
 module.exports = class extends think.Mongo {
   async getList() {
     // 如果含有子目录，那么这里带上子目录，如： this.mongo('front/article')
-    const article = this.mongo('article'); 
+    const article = this.mongo('article');
     const data = await article.select();
     ...
   }
@@ -216,7 +224,7 @@ module.exports = class extends think.Mongo {
 module.exports = class extends think.Mongo {
   async getList() {
     // 让 user 复用当前的 Apdater handle 实例，这样后续可以复用同一个数据库连接
-    const user = this.mongo('user').db(this.db()); 
+    const user = this.mongo('user').db(this.db());
   }
 }
 ```
@@ -420,7 +428,7 @@ module.exports = class extends think.Controller {
     const model = this.mongo('user');
     //第一个参数为要添加的数据，第二个参数为添加的条件，根据第二个参数的条件查询无相关记录时才会添加
     const result = await model.thenAdd({name: 'xxx', pwd: 'yyy'}, {email: 'xxx'});
-    // result returns {id: 1000, type: 'add'} or {id: 1000, type: 'exist'}
+    // result returns {_id: 1000, type: 'add'} or {_id: 1000, type: 'exist'}
   }
 }
 ```
@@ -432,7 +440,7 @@ module.exports = class extends think.Controller {
   async addAction(){
     const model = this.mongo('user');
     const result = await model.where({email: 'xxx'}).thenAdd({name: 'xxx', pwd: 'yyy'});
-    // result returns {id: 1000, type: 'add'} or {id: 1000, type: 'exist'}
+    // result returns {_id: 1000, type: 'add'} or {_id: 1000, type: 'exist'}
   }
 }
 ```
@@ -469,7 +477,7 @@ module.exports = class extends think.Controller {
 module.exports = class extends think.Controller {
   async deleteAction(){
     let model = this.mongo('user');
-    let affectedRows = await model.where({id: ['>', 100]}).delete();
+    let affectedRows = await model.where({id: {$gt, 100}}).delete();
   }
 }
 ```
@@ -572,7 +580,7 @@ module.exports = class extends think.Mongo {
 ```js
 module.exports = class extends think.Mongo {
   updateViewNums(id){
-    return this.where({id: id}).decrement('coins', 10); //将金币减 10 
+    return this.where({id: id}).decrement('coins', 10); //将金币减 10
   }
 }
 ```
@@ -643,7 +651,7 @@ module.exports = class extends think.Controller {
 
 ```js
 {
-  pagesize: 10, //每页显示的条数
+  pageSize: 10, //每页显示的条数, think-mongo@1.0.6 之前该字段为 pagesize
   currentPage: 1, //当前页
   count: 100, //总条数
   totalPages: 10, //总页数
@@ -678,12 +686,12 @@ module.exports = class extends think.Controller {
   async listAction(){
     let model = this.mongo('user');
     // ret1 = 123  没有分组情况下，返回数字
-    let ret1 = await m.sum('age');		
+    let ret1 = await m.sum('age');
     // ret2 = [{group:'thinkjs1',total:6},{group:'thinkjs2',total:8}]
     // 有分组的情况返回[{group:xxx,total:xxx}...]
-    let ret2 = await m.group('name').sum('age'); 
+    let ret2 = await m.group('name').sum('age');
 	// ret3 = [{group:{name:'thinkjs',version'1.0'},total:6},{group:{name:'thinkjs',version'2.0'},total:8},]
-    let ret3 = await m.where({name:'thinkjs'}).order('version ASC').group('name,version').sum('age'); 
+    let ret3 = await m.where({name:'thinkjs'}).order('version ASC').group('name,version').sum('age');
   }
 }
 ```
@@ -699,7 +707,7 @@ module.exports = class extends think.Controller {
 * `reduce` {	function | string} reduce方法
 * `out` {Object} 其他配置
 * `return` {Promise}
-* 
+*
 集合中 Map-Reduce 操作，详见[MapReduce](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#mapReduce)
 
 #### model.createIndex(indexes,options)

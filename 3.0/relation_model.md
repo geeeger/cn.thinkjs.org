@@ -70,10 +70,11 @@ exports.model = {
     user: 'root', // 用户名
     password: '', // 密码
     database: '', // 数据库
-    host: '127.0.0.1', // host 
+    host: '127.0.0.1', // host
     port: 3306, // 端口
     connectionLimit: 1, // 连接池的连接个数，默认为 1
     prefix: '', // 数据表前缀，如果一个数据库里有多个项目，那项目之间的数据表可以通过前缀来区分
+    acquireWaitTimeout: 0, // 等待连接的超时时间，避免获取不到连接一直卡在那里，开发环境下有用
   }
 }
 ```
@@ -112,7 +113,7 @@ exports.model = {
     user: 'root', // 用户名
     password: '', // 密码
     database: '', // 数据库
-    host: '127.0.0.1', // host 
+    host: '127.0.0.1', // host
     port: 3211, // 端口
     connectionLimit: 1, // 连接池的连接个数，默认为 1
     prefix: '', // 数据表前缀，如果一个数据库里有多个项目，那项目之间的数据表可以通过前缀来区分
@@ -156,7 +157,7 @@ think.model('user', 'sqlite'); // 获取模型的实例，修改数据库的类�
 think.model('user', { // 获取模型的实例，修改类型并添加其他的参数
   type: 'sqlite',
   aaa: 'bbb'
-}); 
+});
 think.model('user', {}, 'admin'); // 获取模型的实例，指定为 admin 模块（多模块项目下有效）
 ```
 #### ctx.model
@@ -222,7 +223,7 @@ const user2 = think.model('admin/user'); // 实例化后台的 user 模型
 * [join](/doc/3.0/relation_model.html#toc-48b) 指定 SQL 语句中的 join
 * [union](/doc/3.0/relation_model.html#toc-ad1) 指定 SQL 语句中的 union
 * [having](/doc/3.0/relation_model.html#toc-be2) 指定 SQL 语句中的 having
-* [cache](/doc/3.0/relation_model.html#toc-fb8) 设置查询缓存 
+* [cache](/doc/3.0/relation_model.html#toc-fb8) 设置查询缓存
 
 #### 添加数据
 
@@ -421,7 +422,7 @@ exports.model = {
     parser: sql => {
       // 这里会把当前要执行的 SQL 传递进来
       const sqlLower = sql.toLowerCase();
-      if(sql.indexOf('select ') === 0) {
+      if (sqlLower.startWith('select ')) {
         return {
           host: '',
           port: ''
@@ -516,7 +517,7 @@ module.exports = class extends think.Model {
       },
       comment: { // 配置跟评论的关联关系
 
-      } 
+      }
     }
   }
 }
@@ -585,7 +586,7 @@ module.exports = class extends think.Model {
     return {
       cate: {
         // rModel 为关联模型的实例，model 为当前模型的实例
-        field: (rModel, model) => { 
+        field: (rModel, model) => {
           return 'id,name'
         }
       }
@@ -626,13 +627,6 @@ module.exports = class extends think.Model {
 
 ```js
 module.exports = class extends think.Model {
-  constructor(...args){
-    super(...args);
-    this.relation = {
-      comment: think.Model.HAS_MANY,
-      cate: think.Model.MANY_TO_MANY
-    };
-  }
   getList(){
     return this.setRelation(false).select();
   }
@@ -645,13 +639,6 @@ module.exports = class extends think.Model {
 
 ```js
 module.exports = class extends think.Model {
-  constructor(...args){
-    super(...args);
-    this.relation = {
-      comment: think.Model.HAS_MANY,
-      cate: think.Model.MANY_TO_MANY
-    };
-  }
   getList2(){
     return this.setRelation('comment').select();
   }
@@ -664,13 +651,6 @@ module.exports = class extends think.Model {
 
 ```js
 module.exports = class extends think.Model {
-  constructor(...args){
-    super(...args);
-    this.relation = {
-      comment: think.Model.HAS_MANY,
-      cate: think.Model.MANY_TO_MANY
-    };
-  }
   getList2(){
     return this.setRelation('comment', false).select();
   }
@@ -683,13 +663,6 @@ module.exports = class extends think.Model {
 
 ```js
 module.exports = class extends think.Model {
-  constructor(...args){
-    super(...args);
-    this.relation = {
-      comment: think.Model.HAS_MANY,
-      cate: think.Model.MANY_TO_MANY
-    };
-  }
   getList2(){
     return this.setRelation(true).select();
   }
@@ -702,13 +675,6 @@ module.exports = class extends think.Model {
 
 ```js
 module.exports = class extends think.Model {
-  constructor(...args){
-    super(...args);
-    this.relation = {
-      comment: think.Model.HAS_MANY,
-      cate: think.Model.MANY_TO_MANY
-    };
-  }
   getList2(page){
     // 动态设置 comment 的分页
     return this.setRelation('comment', {page}).select();
@@ -724,7 +690,7 @@ module.exports = class extends think.Model {
 module.exports = class extends think.Model {
   async getList() {
     // 让 user 复用当前的 Apdater handle 实例，这样后续可以复用同一个数据库连接
-    const user = this.model('user').db(this.db()); 
+    const user = this.model('user').db(this.db());
   }
 }
 ```
@@ -832,7 +798,7 @@ console.log(user.lastSql); // 打印最近一条的 sql 语句，如果没有则
 module.exports = class extends think.Model {
   async getList() {
     // 如果含有子目录，那么这里带上子目录，如： this.model('front/article')
-    const article = this.model('article'); 
+    const article = this.model('article');
     const data = await article.select();
     ...
   }
@@ -1045,7 +1011,7 @@ module.exports = class extends think.Model {
     //SELECT * FROM `think_user` WHERE ( `id` > 10 AND `id` < 20 )
     return this.where({id: {'>': 10, '<': 20}}).select();
   }
-  //修改逻辑为 OR 
+  //修改逻辑为 OR
   where2(){
     //SELECT * FROM `think_user` WHERE ( `id` < 10 OR `id` > 20 )
     return this.where({id: {'<': 10, '>': 20, _logic: 'OR'}}).select()
@@ -1168,7 +1134,7 @@ module.exports = class extends think.Model {
   getList(){
     //SELECT * FROM `think_user` LEFT JOIN think_cate ON think_group.cate_id=think_cate.id RIGHT JOIN think_tag ON think_group.tag_id=think_tag.id
     return this.join([
-      'think_cate ON think_group.cate_id=think_cate.id', 
+      'think_cate ON think_group.cate_id=think_cate.id',
       'RIGHT JOIN think_tag ON think_group.tag_id=think_tag.id'
     ]).select();
   }
@@ -1182,7 +1148,7 @@ module.exports = class extends think.Model {
   getList(){
     //SELECT * FROM `think_user` INNER JOIN `think_cate` AS c ON think_user.`cate_id`=c.`id`
     return this.join({
-      table: 'cate', 
+      table: 'cate',
       join: 'inner', //join 方式，有 left, right, inner 3 种方式
       as: 'c', // 表别名
       on: ['cate_id', 'id'] //ON 条件
@@ -1276,7 +1242,7 @@ module.exports = class extends think.Model {
 ```js
 module.exports = class extends think.Model {
   async getList(){
-    let sql = await this.model('group').buildSql();
+    let sql = await this.model('group').buildSelectSql();
     //SELECT * FROM `think_user` LEFT JOIN ( SELECT * FROM `think_group` ) ON think_user.`gid`=( SELECT * FROM `think_group` ).`id`
     return this.join({
       table: sql,
@@ -1481,6 +1447,38 @@ module.exports = class extends think.Controller {
 }
 ```
 
+有时候希望通过 `REPLACE INTO` 来代替 `INSERT INTO`，那么可以传递 `options.replace`：
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    let model = this.model('user');
+    let insertId = await model.add({
+      name: 'xxx',
+      pwd: 'yyy'
+    }, {
+      replace: true
+    });
+  }
+}
+```
+
+如果想用 `INSERT IGNORE INTO`，那么可以：
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    let model = this.model('user');
+    let insertId = await model.add({
+      name: 'xxx',
+      pwd: 'yyy'
+    }, {
+      ignore: true
+    });
+  }
+}
+```
+
 有时候需要借助数据库的一些函数来添加数据，如：时间戳使用 mysql 的 `CURRENT_TIMESTAMP` 函数，这时可以借助 `exp` 表达式来完成。
 
 ```js
@@ -1494,6 +1492,7 @@ module.exports = class extends think.Controller {
   }
 }
 ```
+
 
 #### model.thenAdd(data, where)
 
@@ -1547,10 +1546,37 @@ module.exports = class extends think.Controller {
 }
 ```
 
-#### model.selectAdd(fields, table, options)
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    let model = this.model('user');
+    let insertIds = await model.addMany([
+      {name: 'xxx', pwd: 'yyy'},
+      {name: 'xxx1', pwd: 'yyy1'}
+    ], {
+      ignore: true // 使用 INSERT IGNORE INTO
+    });
+  }
+}
+```
 
-* `fields` {Array | String} 列名
-* `table` {String} 表名
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    let model = this.model('user');
+    let insertIds = await model.addMany([
+      {name: 'xxx', pwd: 'yyy'},
+      {name: 'xxx1', pwd: 'yyy1'}
+    ], {
+      replace: true // 使用 REPLACE INTO
+    });
+  }
+}
+```
+
+#### model.selectAdd(options)
+
 * `options` {Object} 操作选项，会通过 [parseOptions](/doc/3.0/relation_model.html#toc-d91) 方法解析
 * `return` {Promise} 返回插入的 ID 列表
 
@@ -1560,13 +1586,42 @@ module.exports = class extends think.Controller {
 module.exports = class extends think.Controller {
   async addAction(){
     let model = this.model('user');
-    let insertIds = await model.selectAdd(
-      'xxx,xxx1,xxx2',
-      'tableName',
-      {
-        id: '1'
-      }
-    );
+    let insertIds = await model.selectAdd({table: 'user_2'});
+  }
+}
+```
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    const user = this.model('user');
+    const user2 = this.model('user2').field('name');
+    const options = await user2.parseOptions();
+    let insertIds = await user.field('name').selectAdd(options);
+  }
+}
+```
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    const user = this.model('user');
+    const user2 = this.model('user2').field('name');
+    const options = await user2.parseOptions();
+    options.replace = true; // 使用 REPLACE INTO
+    let insertIds = await user.field('name').selectAdd(options);
+  }
+}
+```
+
+```js
+module.exports = class extends think.Controller {
+  async addAction(){
+    const user = this.model('user');
+    const user2 = this.model('user2').field('name');
+    const options = await user2.parseOptions();
+    options.ignore = true; // 使用 INSERT IGNORE INTO
+    let insertIds = await user.field('name').selectAdd(options);
   }
 }
 ```
@@ -1672,6 +1727,14 @@ module.exports = class extends think.Model {
   updateViewNums(id){
     return this.where({id: id}).increment('view_nums', 1); //将阅读数加 1
   }
+  
+  updateViewAndUserNums(id) {
+    return this.where({id}).increment(['view_nums', 'user_nums'], 1); //将阅读数和阅读人数加 1
+  }
+  
+  updateViewAndUserNums(id) {
+    return this.where({id}).increment({view_nums: 2, user_nums: 1}); //将阅读数加2，阅读人数加 1
+  }
 }
 ```
 
@@ -1686,7 +1749,7 @@ module.exports = class extends think.Model {
 ```js
 module.exports = class extends think.Model {
   updateViewNums(id){
-    return this.where({id: id}).decrement('coins', 10); //将金币减 10 
+    return this.where({id: id}).decrement('coins', 10); //将金币减 10
   }
 }
 ```
@@ -1757,7 +1820,7 @@ module.exports = class extends think.Controller {
 
 ```js
 {
-  pagesize: 10, //每页显示的条数
+  pageSize: 10, //每页显示的条数, think-model@1.1.8 之前该字段为 pagesize
   currentPage: 1, //当前页
   count: 100, //总条数
   totalPages: 10, //总页数
@@ -1866,7 +1929,7 @@ module.exports = class extends think.Controller {
 
 ```js
 module.exports = class extends think.Model{
-  // 获取字段值之和
+  // 获取总条数
   getScoreCount() {
     // SELECT COUNT(score) AS think_count FROM `test_d` LIMIT 1
     return this.count('score');
@@ -1962,7 +2025,7 @@ module.exports = class extends think.Model {
 #### model.execute(sqlOptions)
 
 * `sqlOptions` {String | Object} 要操作的 sql 选项
-* `return` {Promise} 
+* `return` {Promise}
 
 执行 SQL 语句，`sqlOptions` 会通过 [parseSql](/doc/3.0/relation_model.html#toc-ec3) 方法解析，使用该方法执行 SQL 语句时需要自己处理安全问题。
 
@@ -2148,6 +2211,86 @@ module.exports = class extends think.Controller {
     const user = this.model('user');
     const data = await user.lock(true).where({id: 1}).find();
     await user.where({id: data}).update({score: 1});
+  }
+}
+```
+#### model.buildSelectSql(options, noParentheses)
+
+* `options` {object} 
+* `noParentheses` {boolean} 返回的字符串前后不加圆括号
+* `return` {String}
+
+根据条件生成 SELECT 语句。
+
+```js
+module.exports = class extends think.Controller {
+  async indexAction() {
+    const user = this.model('user');
+    const sql = await user.where({id: 1}).buildSelectSql();
+  }
+}
+```
+
+
+### 常见问题
+
+#### 高并发下，多个查询语句只会执行一次
+
+为了查询语句有更高的性能，我们认为，在一次 SQL 语句查询期间，有相同的 SQL 语句需要执行时，那么返回的值是一样的，那么就可以把第一次的查询结果缓存，然后同步给后面的查询语句即可，我们称之为 `debounce`。
+
+如果不希望开启这个功能，那么可以在数据库配置中添加 `debounce: false` 来关闭，如：
+
+```js
+const mysql = require('think-model-mysql');
+exports.model = {
+  type: 'mysql',
+  mysql: {
+    handle: mysql, // Adapter handle
+    user: 'root', // 用户名
+    password: '', // 密码
+    database: '', // 数据库
+    host: '127.0.0.1', // host 
+    port: 3306, // 端口
+    connectionLimit: 1, // 连接池的连接个数，默认为 1
+    prefix: '', // 数据表前缀，如果一个数据库里有多个项目，那项目之间的数据表可以通过前缀来区分
+    debounce: false // 关闭 debounce 功能
+  }
+}
+```
+
+#### 数据库支持 emoji 表情
+
+数据库的编码一般会设置为 `utf8`，但 utf8 并不支持 emoji 表情，如果需要数据库支持 emoji 表情，需要将数据库编码设置为 `utf8mb4`。
+
+同时需要在数据库配置中添加或修改 `charset` 的值为 `utf8mb4`，如：
+
+```js
+const mysql = require('think-model-mysql');
+exports.model = {
+  type: 'mysql',
+  mysql: {
+    handle: mysql, // Adapter handle
+    user: 'root', // 用户名
+    password: '', // 密码
+    database: '', // 数据库
+    host: '127.0.0.1', // host 
+    port: 3306, // 端口
+    connectionLimit: 1, // 连接池的连接个数，默认为 1
+    prefix: '', // 数据表前缀，如果一个数据库里有多个项目，那项目之间的数据表可以通过前缀来区分
+    charset: 'utf8mb4'
+  }
+}
+```
+
+#### 模型设置添加 `after(Find|Select)` 钩子之后关联模型数据未获取
+
+因为关联模型也是利用这几个钩子来实现的，如果在继承类中复写了这几个方法的话需要手动的调用基类中的同名方法才会执行关联模型数据获取。
+
+```js
+module.exports = class extends think.Model {
+  async afterFind(...args) {
+    await super.afterFind(...args);
+    //do something...
   }
 }
 ```

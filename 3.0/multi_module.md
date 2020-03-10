@@ -2,10 +2,10 @@
 
 一般的项目我们推荐使用单模块项目，如果项目较为复杂的话，可以使用[多级控制器](/doc/3.0/controller.html#toc-04e)来按功能划分。如果这些还不能满足项目复杂度的需求，那么可以创建多模块项目。
 
-创建项目时可以指定 `--mode=module` 参数创建多模块项目。
+创建项目时可以指定 `-m` 或 `--module` 参数创建多模块项目。
 
 ```sh
-thinkjs new demo --mode=module
+thinkjs new demo -m
 ```
 
 ### 项目结构
@@ -15,3 +15,11 @@ thinkjs new demo --mode=module
 * `src/common` 存放一些公共的代码
 * `src/home` 默认的模块
 * `src/xxx` 按照功能添加模块
+
+### 添加模块
+
+添加模块直接通过 `thinkjs` 命令即可完成。
+
+在当前项目目录下，执行 `thinkjs module xxx`，即可创建名为 `xxx` 的模块。
+
+如果模块名已经存在，则无法创建。

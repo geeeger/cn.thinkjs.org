@@ -89,7 +89,7 @@ module.exports = class extends think.Logic {
 
 #### 指定获取数据来源
 
-如果校验 `version` 参数， 默认情况下会根据当前请求的类型来获取字段对应的值，如果当前请求类型是 `GET`，那么会通过 `this.param('version')` 来获取 `version` 字段的值；如果请求类型是 `POST`，那么会通过 `this.post('version')` 来获取字段的值， 如果当前请求类型是 `FILE`，那么会通过 `this.file('version')` 来获取 `verison` 字段的值。
+如果校验 `version` 参数， 默认情况下会根据当前请求的类型来获取字段对应的值，如果当前请求类型是 `GET`，那么会通过 `this.param('version')` 来获取 `version` 字段的值；如果请求类型是 `POST`，那么会通过 `this.post('version')` 来获取字段的值， 如果当前请求类型是 `FILE`，那么会通过 `this.file('version')` 来获取 `version` 字段的值。
 
 有时候在 `POST` 类型下，可能会获取上传的文件或者获取 URL 上的参数，这时候就需要指定获取数据的方式了。支持的获取数据方式为 `GET`，`POST` 和 `FILE`。
 
@@ -284,6 +284,91 @@ module.exports = class extends think.Logic {
 }
 ```
 
+#### 使用 JSON Schema 对 JSON 数据校验
+
+上面提到了对数组、对象的校验，但是系统内置的 JSON 数据校验不是很强大。这里我们使用 json schema 对复杂的 JSON 数据进行校验。
+
+例如，客户端使用POST方式发送复杂 JSON 数据：
+
+```
+{
+  data: {
+    "foo": 1,
+    "bar": 6
+  }
+}
+```
+
+我们可以在 logic 中配置校验规则：
+
+```
+let rules = {
+  name: {
+    required: true // 此处仍然可以写标准的校验规则
+  },
+  data: {
+    required: true, // 必填，否则data不填写的情况下可以验证通过
+    jsonSchema: { // jsonSchema 为自定义的校验方法，可以定义为其他名字
+      "properties": {
+        "foo": { "type": "string" },
+        "bar": { "type": "number", "maximum": 3 }
+      }
+    }
+  }
+}
+```
+
+在 `config/validator.js` 中增加 `jsonSchema` 校验方法：
+
+```
+const Ajv = require('ajv');
+const ajv = new Ajv({allErrors: true});
+
+module.exports = {
+  rules: {
+    jsonSchema: function(value, {argName, validName, validValue, parsedValidValue, rule, rules, currentQuery, ctx}) {
+      let validate = ajv.compile(validValue); // 运行时编译
+      let valid = validate(value);
+      if (valid) return true;
+      return {
+        [argName]: ajv.errorsText(validate.errors); // 校验失败必须以对象的形式返回，一般形式为 字段名: 错误信息
+      };
+    }
+  }
+}
+```
+
+如果校验通过返回 `true`， 如果校验失败返回 `{ 参数名1: 参数错误信息1, 参数名2: 参数错误信息2 }`。
+
+上面的例子是运行时编译，可以将 json schema 写在一个 JSON 文件中，然后在 validator.js 中引入并进行启动时编译。
+
+```javascript
+const Ajv = require('ajv');
+
+const ajv = new Ajv({ allErrors: true });
+
+// 编译 json schema 文件
+const familyValidator = ajv.compile(require('../schema/family.json'));
+
+function genSchemaRule(validator) {
+  return function(value, { argName }) {
+    const result = validator(value);
+    if (result) return true;
+    return {
+      [argName]: ajv.errorsText(validator.errors)
+    };
+  };
+}
+
+module.exports = {
+  rules: {
+    isFamily: genSchemaRule(familyValidator)
+  }
+};
+```
+
+`注：>think-validator@1.6.0 支持， 这种情况下不会进行校验前数据的自动转换、校验后数据的自动转换（自动转化下面会介绍），也不支持标准的错误信息自定义（要在json schema中定义）。`
+
 #### 校验前数据的自动转换
 
 对于指定为 `boolean` 类型的字段，`'yes'`， `'on'`， `'1'`， `'true'`， `true` 会被转换成 `true`， 其他情况转换成 `false`，然后再执行后续的规则校验；
@@ -379,7 +464,7 @@ module.exports = class extends think.Logic {
 // src/config/validator.js
 module.exports = {
   rules: {
-    eqLucy(value, { argName, validName, validValue, ctx, currentQuery, rule, rules, parsedValidValue }) {
+    eqLucy(value, { argName, validName, validValue, parsedValidValue, rule, rules, currentQuery, ctx}) {
       return value === validValue;
     }
   },
@@ -440,7 +525,7 @@ module.exports = {
     },
 
     eqLucy(value, { argName, validName, validValue, parsedValidValue, currentQuery, ctx, rule, rules }) {
-      return value === parsedValue;
+      return value === parsedValidValue;
     }
   },
   messages: {
@@ -504,6 +589,18 @@ module.exports = class extends think.Logic {
   }
   let flag = this.validate(rules, msgs);
 }
+```
+
+`注：>=think-validator@1.5.0 针对错误信息支持了函数形式`:
+
+```
+// ...
+ let msgs = {
+  address: function({name, validName, rule, args, pargs}) {
+    return 'error message';
+  }
+ }
+// ...
 ```
 
 ### 支持的校验类型

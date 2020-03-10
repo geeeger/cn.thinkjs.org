@@ -162,7 +162,7 @@ module.exports = [
 
 ```js
 module.exports = [
-  [\/user\/(\w+)/, 'user?name=:1']
+  [/\/user\/(\w+)/, 'user?name=:1']
 ]
 ```
 对于上面的路由，假如访问的路径为 `/user/thinkjs`，那么正则中的分组 `(\w+)` 匹配到的值为 `thinkjs`，这样在第二个参数可以通过 `:1` 来获取这个值。对于正则中有多个分组，那么可以通过 `:1`、`:2`、`:3` 这样来获取对应匹配的值。
@@ -173,7 +173,7 @@ module.exports = [
 有时候项目经过多次重构后，URL 地址可能会发生一些变化，为了兼容之前的 URL，一般需要把之前的 URL 跳转到新的 URL 上。这里可以通过将 `method` 设置为 `redirect` 来完成。
 
 ```js
-module.exporst = [
+module.exports = [
   ['/usersettings', '/user/setting', 'redirect', {statusCode: 301}]
 ]
 ```

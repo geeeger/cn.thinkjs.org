@@ -15,6 +15,12 @@ module.exports = {
 };
 ```
 
+与此同时，ThinkJS将`websocket`封装为`think-websocket`,但是需要在项目目录下执行
+```sh
+$ npm install -s think-websocket
+```
+来安装模块
+
 ### 配置 WebSocket
 
 WebSocket 是以 `extend` 的形式集成到 ThinkJS 的，首先要配置 `src/config/extend.js`:
@@ -42,10 +48,10 @@ exports.websocket = {
     allowOrigin: '127.0.0.1:8360',  // 默认所有的域名都允许访问
     path: '/socket.io',             // 默认 '/socket.io'
     adapter: null,                  // 默认无 adapter
-    messages: [{
+    messages: {
       open: '/websocket/open',
       addUser: '/websocket/addUser'
-    }]
+    }
   }
 }
 ```
@@ -161,7 +167,7 @@ module.exports = class extends think.Controller {
 
 #### io 对象
 
-在 Action 里可以通过 `this.ctx.req.io` 来获取 `io` 对象，该对象为 socket.io 的一个实例。
+在 Action 里可以通过 `this.ctx.req.io/this.ctx.app.websocket.io` 来获取 `io` 对象，该对象为 socket.io 的一个实例。
 
 io 对象包含的方法参见文档 [https://socket.io/docs/server-api/#server](https://socket.io/docs/server-api/#server)。
 
