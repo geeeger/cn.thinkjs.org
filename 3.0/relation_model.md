@@ -75,6 +75,7 @@ exports.model = {
     connectionLimit: 1, // 连接池的连接个数，默认为 1
     prefix: '', // 数据表前缀，如果一个数据库里有多个项目，那项目之间的数据表可以通过前缀来区分
     acquireWaitTimeout: 0, // 等待连接的超时时间，避免获取不到连接一直卡在那里，开发环境下有用
+    reuseDB: false // 是否复用数据库连接，事务的时候可能会用到
   }
 }
 ```
@@ -1524,7 +1525,7 @@ module.exports = class extends think.Controller {
   }
 }
 ```
-
+注：`thenAdd()` 本质是 `find()` 和 `add()` 方法的包装，有使用 `beforeAdd()`, `afterAdd()`, `beforeFind()`, `afterFind()` 钩子函数的需要注意一下。
 
 #### model.addMany(dataList, options)
 
@@ -1695,6 +1696,8 @@ module.exports = class extends think.Controller {
 * `return` {Promise}
 
 当 where 条件未命中到任何数据时添加数据，命中数据则更新该数据。
+
+注：`thenAdd()` 本质是 `find()` 和 `add()`、`update()` 方法的包装，有使用 `beforeAdd()`, `afterAdd()`, `beforeFind()`, `afterFind()`, `beforeUpdate`, `afterUpdate()` 钩子函数的需要注意一下。
 
 #### updateMany(dataList, options)
 
@@ -2155,6 +2158,22 @@ module.exports = class extends think.Model {
   }
 }
 ```
+
+由于手动调用 `db` 方法比较麻烦，并且容易遗漏。从 `think-model@1.5.0` 开始，支持配置 `reuseDB: true` 后自动复用数据库连接，就不用再手动调用 `db` 方法了。这个方法是通过将数据库连接挂在到 `ctx` 上来完成的，也就是说在一个请求生命周期内都会复用这个连接，除非是通过 `model` 方法实例化时手动传入 `reuseDB: false` 关闭当前实例的复用。
+
+由于 `Service` 中默认没有 `ctx` 对象，如果也想复用数据库连接的话，可以自己包装下，将 `ctx` 传入进去，然后将 `model` 方法重新改下即可。
+
+```js
+export class BaseService extends think.Service {
+   constructor(ctx) {
+     this.ctx = ctx;
+   }
+   model(name, config) {
+    return this.ctx.model(name, config);
+   }
+}
+```
+
 
 #### model.cache(key, config)
 
